@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Exam+ Student Monitoring System</title>
+    <script src="https://cdn.tailwindcss.com"></script> <!-- Tailwind CSS CDN -->
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            /* Removed overflow: hidden; to allow scrolling */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between; /* Spread content to fit the page */
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3B82F6, #6EE7B7);
+            padding: 15px;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            padding: 10px;
+        }
+
+        .video-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            max-width: 1000px; /* Increased maximum width */
+            width: 100%;
+            height: 600px; /* Increased maximum height */
+            margin-bottom: 15px;
+        }
+
+        .video-frame {
+            border-radius: 10px;
+            width: 100%;
+            height: 100%; /* Adjust to occupy full container height */
+            object-fit: cover;
+        }
+
+        .log-box {
+            background-color: white;
+            border: 2px solid #4A5568;
+            border-radius: 10px;
+            padding: 10px;
+            width: 80%;
+            max-width: 1000px;
+            height: 120px; /* Reduced height to fit the screen */
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #333;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .log-box p {
+            margin: 0;
+            padding: 2px 0;
+        }
+
+        .footer {
+            background: #111827;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .alert {
+            background-color: red;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+
+<!-- Main Container -->
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        Safe Exam+ Student Monitoring System
+    </div>
+
+    <!-- Visual Alert Box (for alerts) -->
+    <div id="alert" class="alert">Alert! Student is looking away!</div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Video Card -->
+        <div class="video-card">
+            <img class="video-frame" src="{{ url_for('video_feed') }}" alt="Video Feed">
+        </div>
+
+        <!-- Log Box for displaying real-time logs -->
+        <div class="log-box" id="log-box">
+            <p>Logs:</p>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        &copy; 2024 Safe Exam+ | Powered by AI-based Real-time Monitoring
+    </div>
+
+</div>
+
+<!-- Audio element for alert sound -->
+<audio id="alert-sound" src="/static/alert-sound.mp3"></audio>
+
+<script>
+    let soundAllowed = false;
+
+    // Function to play sound alert and show visual alert
+    function showAlert() {
+        const alertBox = document.getElementById('alert');
+        const alertSound = document.getElementById('alert-sound');
+
+        // Show visual alert
+        alertBox.style.display = 'block';
+        setTimeout(() => {
+            alertBox.style.display = 'none'; // Hide after 3 seconds
+        }, 3000);
+
+        // Play the sound if allowed
+        if (soundAllowed) {
+            alertSound.play();
+        }
+    }
+
+    // Enable sound after any user interaction
+    document.body.addEventListener('click', () => {
+        soundAllowed = true;
+    });
+
+    // Add log entries to the log box
+    function addLogEntry(message) {
+        const logBox = document.getElementById('log-box');
+        const logEntry = document.createElement('p');
+        logEntry.textContent = message;
+        logBox.appendChild(logEntry);
+
+        // Scroll to the bottom of the log box to show the latest log
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Function to check direction and update the log box and alert
+    function checkDirection() {
+        fetch('/check_direction')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.alert === true) {
+                        showAlert();
+                        addLogEntry(`ALERT: Student looking ${data.direction}`);
+                    } else {
+                        addLogEntry(`INFO: Student is looking ${data.direction}`);
+                    }
+                })
+                .catch(err => console.error('Error:', err));
+    }
+
+    // Poll every second to check if alert is triggered and update the log
+    setInterval(checkDirection, 1000);
+</script>
+
+</body>
+</html>
